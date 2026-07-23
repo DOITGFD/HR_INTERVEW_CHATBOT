@@ -1,0 +1,43 @@
+services:
+  # ── Backend Web Service ──────────────────────────────────────
+  - type: web
+    name: hr-interview-bot-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        fromService:
+          name: hr-interview-bot-frontend
+          type: web
+          property: host
+      - key: MONGO_URI
+        sync: false   # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GEMINI_API_KEY
+        sync: false   # Set manually in Render dashboard
+
+  # ── Frontend Static Site ─────────────────────────────────────
+  - type: web
+    name: hr-interview-bot-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && REACT_APP_API_URL=https://hr-interview-bot-backend.onrender.com/api npm run build
+    staticPublishPath: build
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
