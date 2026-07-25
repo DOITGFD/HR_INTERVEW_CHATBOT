@@ -109,6 +109,49 @@ router.post('/:id/abandon', protect, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/interview/execute-code ──────────────────────────
+router.post('/execute-code', protect, async (req, res, next) => {
+  try {
+    const { language, code } = req.body;
+    if (!language || !code) return res.status(400).json({ error: 'language and code are required' });
+
+    // Map common languages to Piston identifiers
+    const langMap = {
+      javascript: { language: 'javascript', version: '18.15.0' },
+      python:     { language: 'python', version: '3.10.0' },
+      java:       { language: 'java', version: '15.0.2' },
+      cpp:        { language: 'cpp', version: '10.2.0' },
+    };
+
+    const targetLang = langMap[language];
+    if (!targetLang) return res.status(400).json({ error: 'Unsupported language' });
+
+    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: targetLang.language,
+        version: targetLang.version,
+        files: [{ content: code }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.message) {
+      return res.status(400).json({ error: data.message });
+    }
+
+    res.json({
+      stdout: data.run?.stdout || '',
+      stderr: data.run?.stderr || '',
+      code: data.run?.code || 0
+    });
+  } catch (err) { 
+    console.error('Piston Execution Error:', err);
+    res.status(500).json({ error: 'Failed to execute code' }); 
+  }
+});
+
 // ── GET /api/interview — list user's interviews ───────────────
 router.get('/', protect, async (req, res, next) => {
   try {

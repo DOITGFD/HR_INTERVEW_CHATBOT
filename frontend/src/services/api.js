@@ -42,6 +42,7 @@ export const interviewAPI = {
   getOne:  (id)                   => api.get(`/interview/${id}`),
   list:    (params)               => api.get('/interview', { params }),
   remove:  (id)                   => api.delete(`/interview/${id}`),
+  executeCode: (data)             => api.post('/interview/execute-code', data),
 };
 
 // ── Reports ───────────────────────────────────────────────────
