@@ -72,10 +72,11 @@ app.use('/api/interview', interviewRoutes);
 app.use('/api/report',    reportRoutes);
 app.use('/api/admin',     adminRoutes);
 
-// ── Health check & Root ───────────────────────────────────────
+// ── Root & Health check ───────────────────────────────────────
 app.get('/', (_, res) => res.json({
-  message: '🚀 AI Interview Bot Backend API is active',
-  health: '/api/health',
+  status: 'ok',
+  message: 'AI Interview Bot API Server',
+  health: '/api/health'
 }));
 
 app.get('/api/health', (_, res) => res.json({
