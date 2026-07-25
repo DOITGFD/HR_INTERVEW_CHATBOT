@@ -115,40 +115,50 @@ router.post('/execute-code', protect, async (req, res, next) => {
     const { language, code } = req.body;
     if (!language || !code) return res.status(400).json({ error: 'language and code are required' });
 
-    // Map common languages to Piston identifiers
+    if (!process.env.JDOODLE_CLIENT_ID || !process.env.JDOODLE_CLIENT_SECRET) {
+      return res.status(400).json({ 
+        error: 'Code execution requires JDoodle API keys. Please add JDOODLE_CLIENT_ID and JDOODLE_CLIENT_SECRET to your .env file in Render.' 
+      });
+    }
+
+    // Map common languages to JDoodle identifiers
     const langMap = {
-      javascript: { language: 'javascript', version: '18.15.0' },
-      python:     { language: 'python', version: '3.10.0' },
-      java:       { language: 'java', version: '15.0.2' },
-      cpp:        { language: 'cpp', version: '10.2.0' },
+      javascript: { language: 'nodejs', versionIndex: '4' },
+      python:     { language: 'python3', versionIndex: '4' },
+      java:       { language: 'java', versionIndex: '4' },
+      cpp:        { language: 'cpp17', versionIndex: '0' },
     };
 
     const targetLang = langMap[language];
     if (!targetLang) return res.status(400).json({ error: 'Unsupported language' });
 
-    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+    // Use native Node fetch (available in Node 18+)
+    const response = await fetch('https://api.jdoodle.com/v1/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        clientId: process.env.JDOODLE_CLIENT_ID,
+        clientSecret: process.env.JDOODLE_CLIENT_SECRET,
+        script: code,
         language: targetLang.language,
-        version: targetLang.version,
-        files: [{ content: code }]
+        versionIndex: targetLang.versionIndex
       })
     });
 
     const data = await response.json();
-    if (data.message) {
-      return res.status(400).json({ error: data.message });
+    
+    if (data.error) {
+      return res.status(400).json({ error: data.error });
     }
 
     res.json({
-      stdout: data.run?.stdout || '',
-      stderr: data.run?.stderr || '',
-      code: data.run?.code || 0
+      stdout: data.output || '',
+      stderr: '', // JDoodle puts compilation errors in 'output' as well
+      code: data.statusCode || 0
     });
   } catch (err) { 
-    console.error('Piston Execution Error:', err);
-    res.status(500).json({ error: 'Failed to execute code' }); 
+    console.error('JDoodle Execution Error:', err);
+    res.status(500).json({ error: 'Failed to execute code. Internal Server Error.' }); 
   }
 });
 

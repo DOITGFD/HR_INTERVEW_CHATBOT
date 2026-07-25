@@ -122,7 +122,9 @@ export default function InterviewPage() {
   const scrollRef   = useRef();
   const recRef      = useRef();
   const domainLabel = config.domain === 'custom' ? config.customTopic : DOMAINS[config.domain];
-  const TIME_MAP    = { Easy:90, Medium:120, Hard:180 };
+  const TIME_MAP    = isCoding 
+    ? { Easy: 600, Medium: 1200, Hard: 1800 } 
+    : { Easy: 90, Medium: 120, Hard: 180 };
 
   const push = useCallback((role, content) => {
     setMessages(m => [...m, { role, content }]);
